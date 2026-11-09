@@ -1,0 +1,216 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Today · Me</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;
+  background:linear-gradient(145deg,#fff3f1,#f4efff,#edf7ff);
+  color:#514b5c;display:flex;align-items:center;
+  justify-content:center;padding:25px;
+}
+main{width:100%;max-width:440px;text-align:center}
+h1{font-size:32px;margin:20px 0 8px;color:#62566f}
+.sub{color:#a69aaa;margin-bottom:45px}
+.buttons{display:flex;justify-content:center;gap:22px}
+.circle{
+  width:145px;height:145px;border:0;border-radius:50%;
+  font-size:22px;font-weight:600;color:#66566d;
+  box-shadow:0 10px 25px #b7a8c455;
+  cursor:pointer;transition:.2s;
+}
+.circle:active{transform:scale(.95)}
+.one{background:#ffe0df}
+.two{background:#e5ddff}
+.tip{font-size:13px;color:#aaa0ad;margin-top:38px}
+.admin-link{margin-top:30px;border:0;background:none;color:#b9aebe;font-size:12px}
+.modal{
+  display:none;position:fixed;inset:0;background:#51465b66;
+  align-items:center;justify-content:center;padding:22px;
+}
+.panel{
+  width:100%;max-width:390px;background:#fff;
+  border-radius:25px;padding:28px 23px;
+  box-shadow:0 15px 50px #51465b33;
+}
+.panel h2{font-size:21px;margin:0 0 20px}
+.content{
+  min-height:100px;white-space:pre-wrap;line-height:1.9;
+  font-size:17px;text-align:left;color:#71677b;
+}
+.close{
+  border:0;background:#f3eff7;border-radius:20px;
+  padding:10px 25px;margin-top:20px;color:#75677e;
+}
+input,textarea{
+  width:100%;padding:12px;border:1px solid #e5dfea;
+  border-radius:12px;margin:7px 0 14px;
+  font:inherit;color:#514b5c;
+}
+textarea{min-height:90px;resize:vertical}
+.action{
+  border:0;border-radius:14px;background:#dcd1f4;
+  color:#594d67;padding:12px 18px;margin:5px;
+  font-size:14px;cursor:pointer;
+}
+.status{font-size:12px;color:#a69aaa;margin-top:12px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Today · Me</h1>
+  <div class="sub">记录一点日常，也记录此刻的心情 ♡</div>
+
+  <div class="buttons">
+    <button class="circle one" onclick="showDoing()">我在干嘛</button>
+    <button class="circle two" onclick="showFeeling()">我的 feeling</button>
+  </div>
+
+  <div class="tip">一些小小的日常，分享给你</div>
+  <button class="admin-link" onclick="openAdmin()">管理入口</button>
+</main>
+
+<div class="modal" id="readModal" onclick="outsideClose(event)">
+  <div class="panel">
+    <h2 id="readTitle"></h2>
+    <div class="content" id="readContent"></div>
+    <button class="close" onclick="closeModal('readModal')">知道啦 ♡</button>
+  </div>
+</div>
+
+<div class="modal" id="adminModal">
+  <div class="panel">
+    <h2>管理员登录</h2>
+    <div id="loginArea">
+      <input id="email" type="email" placeholder="管理员邮箱">
+      <input id="password" type="password" placeholder="管理员密码">
+      <button class="action" onclick="login()">登录</button>
+    </div>
+
+    <div id="editArea" style="display:none">
+      <p style="text-align:left;font-size:14px">我在干嘛</p>
+      <textarea id="doingInput"></textarea>
+      <p style="text-align:left;font-size:14px">我的 feeling</p>
+      <textarea id="feelingInput"></textarea>
+      <button class="action" onclick="saveContent()">保存修改</button>
+      <button class="action" onclick="logout()">退出登录</button>
+    </div>
+    <div class="status" id="adminStatus"></div>
+    <button class="close" onclick="closeModal('adminModal')">关闭</button>
+  </div>
+</div>
+
+<script>
+// 将下面的配置替换成你自己的 Supabase 信息
+const SUPABASE_URL = "https://omhigpuafclblluwmqka.supabase.co";
+const SUPABASE_ANON_KEY = "nH8cmIk0YTgmrDz1";
+
+const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+let doingText = "今天也在认真生活。";
+let feelingText = "愿每一天都有一点值得期待的小事。";
+
+async function loadContent(){
+  const {data,error} = await db
+    .from("site_content")
+    .select("*")
+    .eq("id",1)
+    .single();
+
+  if(!error && data){
+    doingText = data.doing_text || doingText;
+    feelingText = data.feeling_text || feelingText;
+  }
+}
+
+function showDoing(){
+  document.getElementById("readTitle").textContent="我在干嘛";
+  document.getElementById("readContent").textContent=doingText;
+  document.getElementById("readModal").style.display="flex";
+}
+
+function showFeeling(){
+  document.getElementById("readTitle").textContent="我的 feeling";
+  document.getElementById("readContent").textContent="";
+  document.getElementById("readModal").style.display="flex";
+  let i=0;
+  const text=feelingText;
+  const target=document.getElementById("readContent");
+  const timer=setInterval(()=>{
+    target.textContent=text.slice(0,i+1);
+    i++;
+    if(i>=text.length) clearInterval(timer);
+  },75);
+}
+
+function closeModal(id){
+  document.getElementById(id).style.display="none";
+}
+
+function outsideClose(event){
+  if(event.target.id==="readModal") closeModal("readModal");
+}
+
+function openAdmin(){
+  document.getElementById("adminModal").style.display="flex";
+}
+
+async function login(){
+  const email=document.getElementById("email").value.trim();
+  const password=document.getElementById("password").value;
+  const status=document.getElementById("adminStatus");
+  status.textContent="正在登录……";
+
+  const {error}=await db.auth.signInWithPassword({email,password});
+  if(error){
+    status.textContent="登录失败，请检查邮箱和密码。";
+    return;
+  }
+
+  document.getElementById("loginArea").style.display="none";
+  document.getElementById("editArea").style.display="block";
+  document.getElementById("doingInput").value=doingText;
+  document.getElementById("feelingInput").value=feelingText;
+  status.textContent="登录成功，可以修改内容了。";
+}
+
+async function saveContent(){
+  const status=document.getElementById("adminStatus");
+  status.textContent="正在保存……";
+
+  const newDoing=document.getElementById("doingInput").value;
+  const newFeeling=document.getElementById("feelingInput").value;
+
+  const {error}=await db.from("site_content").update({
+    doing_text:newDoing,
+    feeling_text:newFeeling
+  }).eq("id",1);
+
+  if(error){
+    status.textContent="保存失败："+error.message;
+    return;
+  }
+
+  doingText=newDoing;
+  feelingText=newFeeling;
+  status.textContent="保存成功！朋友刷新页面就能看到新内容。";
+}
+
+async function logout(){
+  await db.auth.signOut();
+  document.getElementById("loginArea").style.display="block";
+  document.getElementById("editArea").style.display="none";
+  document.getElementById("password").value="";
+  document.getElementById("adminStatus").textContent="已退出登录";
+}
+
+loadContent();
+</script>
+</body>
+</html>
